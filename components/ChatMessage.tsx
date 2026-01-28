@@ -55,7 +55,7 @@ export default function ChatMessage({ message }: ChatMessageProps) {
 
         {/* Actions row for assistant messages */}
         {!isUser && (
-          <div className="flex items-center gap-3 mt-2 max-w-[80%] w-full">
+          <div className="flex items-center gap-4 mt-2">
             {/* Sources Button */}
             {sources.length > 0 && (
               <button
@@ -71,10 +71,10 @@ export default function ChatMessage({ message }: ChatMessageProps) {
               </button>
             )}
 
-            {/* Copy Button - aligned right */}
+            {/* Copy Button */}
             <button
               onClick={handleCopy}
-              className="flex items-center gap-1 text-xs text-gray-500 hover:text-gray-700 transition-colors ml-auto"
+              className="flex items-center gap-1 text-xs text-gray-500 hover:text-gray-700 transition-colors"
               title="Copy response"
             >
               {isCopied ? (
