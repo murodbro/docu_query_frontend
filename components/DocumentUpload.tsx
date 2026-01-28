@@ -158,14 +158,20 @@ export default function DocumentUpload({ onUploadComplete }: DocumentUploadProps
           accept=".pdf,.docx,.txt"
           onChange={handleFileInput}
           disabled={uploading}
+          multiple={false}
         />
 
         {uploading ? (
           <div className="flex flex-col items-center justify-center space-y-4">
-            <Loader2 className="h-12 w-12 text-primary-500 animate-spin" />
+            <div className="relative">
+              <Loader2 className="h-12 w-12 text-primary-500 animate-spin" />
+              <div className="absolute inset-0 flex items-center justify-center">
+                <File className="h-5 w-5 text-primary-600" />
+              </div>
+            </div>
             <div className="text-center">
               <p className="text-lg font-medium text-gray-900">
-                Processing {uploadStatus.filename}
+                {uploadStatus.filename}
               </p>
               <p className="text-sm text-gray-500 mt-1">
                 {uploadStatus.status === 'processing'
@@ -174,6 +180,32 @@ export default function DocumentUpload({ onUploadComplete }: DocumentUploadProps
                   ? 'Completed!'
                   : 'Uploading...'}
               </p>
+            </div>
+            {/* Progress Steps */}
+            <div className="w-full max-w-xs">
+              <div className="flex items-center justify-between text-xs text-gray-500 mb-2">
+                <span className={uploadStatus.status ? 'text-primary-600 font-medium' : ''}>
+                  Upload
+                </span>
+                <span className={uploadStatus.status === 'processing' || uploadStatus.status === 'completed' ? 'text-primary-600 font-medium' : ''}>
+                  Processing
+                </span>
+                <span className={uploadStatus.status === 'completed' ? 'text-primary-600 font-medium' : ''}>
+                  Complete
+                </span>
+              </div>
+              <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-gradient-to-r from-primary-500 to-violet-500 transition-all duration-500 ease-out"
+                  style={{
+                    width: uploadStatus.status === 'completed'
+                      ? '100%'
+                      : uploadStatus.status === 'processing'
+                      ? '66%'
+                      : '33%'
+                  }}
+                />
+              </div>
             </div>
           </div>
         ) : uploadStatus.status === 'completed' ? (

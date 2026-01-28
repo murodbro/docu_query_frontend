@@ -1,9 +1,9 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { Send, Loader2, Sparkles } from 'lucide-react';
 import { queryDocuments, type QueryResponse, type Citation } from '@/lib/api';
-import { cn, generateSessionId } from '@/lib/utils';
+import { cn, generateSessionId, getUserStorageKey } from '@/lib/utils';
 import ChatMessage from './ChatMessage';
 import CitationCard from './CitationCard';
 
@@ -23,6 +23,9 @@ interface ChatInterfaceProps {
   onMessageSent?: () => void;
 }
 
+// Get storage key for chat messages
+const getMessagesKey = (sessionId: string) => getUserStorageKey(`chat_messages_${sessionId}`);
+
 export default function ChatInterface({ sessionId, onSessionChange, onMessageSent }: ChatInterfaceProps) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
@@ -34,6 +37,28 @@ export default function ChatInterface({ sessionId, onSessionChange, onMessageSen
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
+
+  // Load messages from localStorage when sessionId changes
+  useEffect(() => {
+    if (!sessionId) return;
+
+    const stored = localStorage.getItem(getMessagesKey(sessionId));
+    if (stored) {
+      try {
+        setMessages(JSON.parse(stored));
+      } catch (e) {
+        setMessages([]);
+      }
+    } else {
+      setMessages([]);
+    }
+  }, [sessionId]);
+
+  // Save messages to localStorage whenever they change
+  const saveMessages = useCallback((newMessages: Message[]) => {
+    if (!sessionId) return;
+    localStorage.setItem(getMessagesKey(sessionId), JSON.stringify(newMessages));
+  }, [sessionId]);
 
   useEffect(() => {
     scrollToBottom();
@@ -54,7 +79,9 @@ export default function ChatInterface({ sessionId, onSessionChange, onMessageSen
       timestamp: new Date().toISOString(),
     };
 
-    setMessages((prev) => [...prev, userMessage]);
+    const updatedMessages = [...messages, userMessage];
+    setMessages(updatedMessages);
+    saveMessages(updatedMessages);
     setInput('');
     setIsLoading(true);
     setError(null);
@@ -76,7 +103,9 @@ export default function ChatInterface({ sessionId, onSessionChange, onMessageSen
         },
       };
 
-      setMessages((prev) => [...prev, assistantMessage]);
+      const finalMessages = [...updatedMessages, assistantMessage];
+      setMessages(finalMessages);
+      saveMessages(finalMessages);
       onMessageSent?.();
     } catch (err: any) {
       setError(err.response?.data?.detail || 'Failed to get response. Please try again.');
@@ -160,36 +189,34 @@ export default function ChatInterface({ sessionId, onSessionChange, onMessageSen
       </div>
 
       {/* Input Area */}
-      <div className="border-t border-gray-200 bg-white p-4">
-        <form onSubmit={handleSubmit} className="max-w-4xl mx-auto">
-          <div className="relative flex items-end gap-2">
-            <div className="flex-1 relative">
-              <textarea
-                ref={inputRef}
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                onKeyDown={handleKeyDown}
-                placeholder="Ask a question about your documents..."
-                rows={1}
-                className={cn(
-                  'w-full resize-none rounded-xl border border-gray-300 px-4 py-3 pr-12',
-                  'focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 focus:outline-none',
-                  'placeholder:text-gray-400 text-gray-900',
-                  'transition-all duration-200',
-                  'max-h-32'
-                )}
-                style={{
-                  minHeight: '48px',
-                  height: 'auto',
-                }}
-                onInput={(e) => {
-                  const target = e.target as HTMLTextAreaElement;
-                  target.style.height = 'auto';
-                  target.style.height = Math.min(target.scrollHeight, 128) + 'px';
-                }}
-                disabled={isLoading}
-              />
-            </div>
+      <div className="border-t border-gray-200 bg-white py-4">
+        <form onSubmit={handleSubmit} className="max-w-3xl mx-auto px-4">
+          <div className="relative flex items-center gap-2">
+            <textarea
+              ref={inputRef}
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              onKeyDown={handleKeyDown}
+              placeholder="Ask a question about your documents..."
+              rows={1}
+              className={cn(
+                'flex-1 resize-none rounded-xl border border-gray-300 px-4 py-3',
+                'focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 focus:outline-none',
+                'placeholder:text-gray-400 text-gray-900',
+                'transition-all duration-200',
+                'max-h-32'
+              )}
+              style={{
+                minHeight: '48px',
+                height: 'auto',
+              }}
+              onInput={(e) => {
+                const target = e.target as HTMLTextAreaElement;
+                target.style.height = 'auto';
+                target.style.height = Math.min(target.scrollHeight, 128) + 'px';
+              }}
+              disabled={isLoading}
+            />
             <button
               type="submit"
               disabled={!input.trim() || isLoading}
@@ -217,3 +244,4 @@ export default function ChatInterface({ sessionId, onSessionChange, onMessageSen
     </div>
   );
 }
+

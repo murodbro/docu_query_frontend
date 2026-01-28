@@ -21,7 +21,7 @@ import {
 } from 'lucide-react';
 import DocumentUpload from '@/components/DocumentUpload';
 import ChatInterface from '@/components/ChatInterface';
-import { cn, generateSessionId, formatDate } from '@/lib/utils';
+import { cn, generateSessionId, formatDate, getUserStorageKey } from '@/lib/utils';
 
 type View = 'upload' | 'chat' | 'documents';
 
@@ -41,10 +41,10 @@ interface UploadedDocument {
   status: 'processing' | 'completed' | 'failed';
 }
 
-// LocalStorage keys
-const SESSIONS_KEY = 'docuquery_sessions';
-const DOCUMENTS_KEY = 'docuquery_documents';
-const CURRENT_SESSION_KEY = 'docuquery_current_session';
+// LocalStorage base keys (will be prefixed with user ID)
+const SESSIONS_KEY = 'sessions';
+const DOCUMENTS_KEY = 'documents';
+const CURRENT_SESSION_KEY = 'current_session';
 
 export default function Home() {
   const [currentView, setCurrentView] = useState<View>('upload');
@@ -55,11 +55,11 @@ export default function Home() {
   const [isHistoryExpanded, setIsHistoryExpanded] = useState(true);
   const [isDocsExpanded, setIsDocsExpanded] = useState(true);
 
-  // Load saved data on mount
+  // Load saved data on mount (user-specific)
   useEffect(() => {
-    const storedSessions = localStorage.getItem(SESSIONS_KEY);
-    const storedDocs = localStorage.getItem(DOCUMENTS_KEY);
-    const currentSession = localStorage.getItem(CURRENT_SESSION_KEY);
+    const storedSessions = localStorage.getItem(getUserStorageKey(SESSIONS_KEY));
+    const storedDocs = localStorage.getItem(getUserStorageKey(DOCUMENTS_KEY));
+    const currentSession = localStorage.getItem(getUserStorageKey(CURRENT_SESSION_KEY));
 
     if (storedSessions) {
       setSavedSessions(JSON.parse(storedSessions));
@@ -72,20 +72,20 @@ export default function Home() {
     } else {
       const newSessionId = generateSessionId();
       setSessionId(newSessionId);
-      localStorage.setItem(CURRENT_SESSION_KEY, newSessionId);
+      localStorage.setItem(getUserStorageKey(CURRENT_SESSION_KEY), newSessionId);
     }
   }, []);
 
-  // Save sessions to localStorage
+  // Save sessions to localStorage (user-specific)
   const saveSessions = useCallback((sessions: SavedSession[]) => {
     setSavedSessions(sessions);
-    localStorage.setItem(SESSIONS_KEY, JSON.stringify(sessions));
+    localStorage.setItem(getUserStorageKey(SESSIONS_KEY), JSON.stringify(sessions));
   }, []);
 
-  // Save documents to localStorage
+  // Save documents to localStorage (user-specific)
   const saveDocuments = useCallback((docs: UploadedDocument[]) => {
     setUploadedDocuments(docs);
-    localStorage.setItem(DOCUMENTS_KEY, JSON.stringify(docs));
+    localStorage.setItem(getUserStorageKey(DOCUMENTS_KEY), JSON.stringify(docs));
   }, []);
 
   // Get current session info
@@ -157,14 +157,14 @@ export default function Home() {
   const handleNewSession = () => {
     const newSessionId = generateSessionId();
     setSessionId(newSessionId);
-    localStorage.setItem(CURRENT_SESSION_KEY, newSessionId);
+    localStorage.setItem(getUserStorageKey(CURRENT_SESSION_KEY), newSessionId);
     setCurrentView('upload');
     setIsSidebarOpen(false);
   };
 
   const handleSelectSession = (session: SavedSession) => {
     setSessionId(session.id);
-    localStorage.setItem(CURRENT_SESSION_KEY, session.id);
+    localStorage.setItem(getUserStorageKey(CURRENT_SESSION_KEY), session.id);
     setCurrentView('chat');
     setIsSidebarOpen(false);
   };
@@ -358,44 +358,8 @@ export default function Home() {
               </div>
             )}
           </div>
-
-          {/* Current Session Documents */}
-          {currentSessionDocs.length > 0 && (
-            <div className="bg-gray-50/50 rounded-xl border border-gray-200/50">
-              <button
-                onClick={() => setIsDocsExpanded(!isDocsExpanded)}
-                className="w-full flex items-center justify-between px-4 py-3 text-sm font-semibold text-gray-700"
-              >
-                <div className="flex items-center gap-2">
-                  <File className="w-4 h-4" />
-                  <span>Session Documents</span>
-                </div>
-                {isDocsExpanded ? (
-                  <ChevronUp className="w-4 h-4" />
-                ) : (
-                  <ChevronDown className="w-4 h-4" />
-                )}
-              </button>
-
-              {isDocsExpanded && (
-                <div className="px-2 pb-2 space-y-1 max-h-32 overflow-y-auto">
-                  {currentSessionDocs.map((doc, i) => (
-                    <div
-                      key={i}
-                      className="flex items-center gap-2 px-3 py-2 bg-white rounded-lg border border-gray-100"
-                    >
-                      <FileText className="w-4 h-4 text-primary-500 flex-shrink-0" />
-                      <span className="text-xs text-gray-700 truncate flex-1">{doc.filename}</span>
-                      <span className="text-[10px] text-green-600 bg-green-50 px-1.5 py-0.5 rounded">
-                        ✓
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
         </div>
+
 
         {/* Features Card */}
         <div className="p-4 flex-shrink-0">

@@ -37,3 +37,31 @@ export function truncateText(text: string, maxLength: number): string {
 export function generateSessionId(): string {
   return `session_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
 }
+
+const USER_ID_KEY = 'docuquery_user_id';
+
+/**
+ * Get or create a unique user identifier.
+ * This ensures each browser/device has its own isolated data.
+ */
+export function getUserId(): string {
+  if (typeof window === 'undefined') {
+    return 'server';
+  }
+
+  let userId = localStorage.getItem(USER_ID_KEY);
+  if (!userId) {
+    userId = `user_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
+    localStorage.setItem(USER_ID_KEY, userId);
+  }
+  return userId;
+}
+
+/**
+ * Generate user-specific localStorage key.
+ * Prefixes the key with user ID to isolate data per user.
+ */
+export function getUserStorageKey(key: string): string {
+  return `${getUserId()}_${key}`;
+}
+
