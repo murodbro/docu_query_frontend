@@ -4,6 +4,7 @@ import { useEffect, useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { CheckCircle2, XCircle, Loader2 } from 'lucide-react';
+import api from '@/lib/api';
 
 function VerifyEmailContent() {
   const router = useRouter();
@@ -22,26 +23,12 @@ function VerifyEmailContent() {
 
     const verifyEmail = async () => {
       try {
-        const response = await fetch('http://localhost:8000/api/auth/verify-email', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ token }),
-        });
-
-        const data = await response.json();
-
-        if (response.ok) {
-          setStatus('success');
-          setMessage('Your email has been successfully verified.');
-        } else {
-          setStatus('error');
-          setMessage(data.detail || 'Failed to verify email');
-        }
-      } catch (error) {
+        await api.post('/auth/verify-email', { token });
+        setStatus('success');
+        setMessage('Your email has been successfully verified.');
+      } catch (error: any) {
         setStatus('error');
-        setMessage('An error occurred during verification');
+        setMessage(error.response?.data?.detail || 'Failed to verify email');
       }
     };
 
