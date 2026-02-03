@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { User, Bot, ChevronDown, ChevronRight, Copy, Check } from 'lucide-react';
 import { type HistoryMessage, type Citation } from '@/lib/api';
+import ReactMarkdown from 'react-markdown';
 import CitationCard from './CitationCard';
 import { formatDate } from '@/lib/utils';
 
@@ -44,6 +45,8 @@ export default function ChatMessage({ message, onSourceClick }: ChatMessageProps
       </div>
 
       <div className={`flex-1 ${isUser ? 'items-end' : 'items-start'} flex flex-col`}>
+
+
         <div
           className={`rounded-lg px-4 py-3 max-w-[80%] ${
             isUser
@@ -51,7 +54,21 @@ export default function ChatMessage({ message, onSourceClick }: ChatMessageProps
               : 'bg-gray-100 text-gray-900'
           }`}
         >
-          <p className="whitespace-pre-wrap break-words">{message.content}</p>
+          {isUser ? (
+            <p className="whitespace-pre-wrap break-words">{message.content}</p>
+          ) : (
+            <div className="prose prose-sm max-w-none break-words prose-p:leading-relaxed prose-pre:p-0">
+              <ReactMarkdown
+                components={{
+                  a: ({ node, ...props }) => (
+                    <a {...props} target="_blank" rel="noopener noreferrer" className="text-primary-600 hover:underline" />
+                  ),
+                }}
+              >
+                {message.content}
+              </ReactMarkdown>
+            </div>
+          )}
         </div>
 
         {/* Actions row for assistant messages */}
