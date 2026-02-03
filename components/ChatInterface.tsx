@@ -19,14 +19,17 @@ interface Message {
 
 interface ChatInterfaceProps {
   sessionId: string;
+  folderId?: string;
+  folderName?: string;
   onSessionChange?: (sessionId: string) => void;
   onMessageSent?: () => void;
+  onSourceClick?: (citation: Citation) => void;
 }
 
 // Get storage key for chat messages
 const getMessagesKey = (sessionId: string) => getUserStorageKey(`chat_messages_${sessionId}`);
 
-export default function ChatInterface({ sessionId, onSessionChange, onMessageSent }: ChatInterfaceProps) {
+export default function ChatInterface({ sessionId, folderId, folderName, onSessionChange, onMessageSent, onSourceClick }: ChatInterfaceProps) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -87,7 +90,7 @@ export default function ChatInterface({ sessionId, onSessionChange, onMessageSen
     setError(null);
 
     try {
-      const response: QueryResponse = await queryDocuments(input.trim(), sessionId);
+      const response: QueryResponse = await queryDocuments(input.trim(), sessionId, folderId);
 
       if (response.session_id && response.session_id !== sessionId) {
         onSessionChange?.(response.session_id);
@@ -124,73 +127,79 @@ export default function ChatInterface({ sessionId, onSessionChange, onMessageSen
   return (
     <div className="flex flex-col h-full">
       {/* Messages Area */}
-      <div className="flex-1 overflow-y-auto px-4 py-6 space-y-6">
-        {messages.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-full text-center">
-            <div className="w-20 h-20 rounded-full bg-gradient-to-br from-primary-500 to-violet-600 flex items-center justify-center mb-6 shadow-lg shadow-primary-500/25">
-              <Sparkles className="w-10 h-10 text-white" />
+      <div className="flex-1 overflow-y-auto px-4 py-6">
+        <div className="max-w-4xl mx-auto space-y-6">
+          {messages.length === 0 ? (
+            <div className="flex flex-col items-center justify-center h-full text-center py-12">
+              <div className="w-20 h-20 rounded-full bg-gradient-to-br from-primary-500 to-violet-600 flex items-center justify-center mb-6 shadow-lg shadow-primary-500/25">
+                <Sparkles className="w-10 h-10 text-white" />
+              </div>
+              <h2 className="text-2xl font-bold text-gray-900 mb-2">
+                Ask anything about your documents
+              </h2>
+              <p className="text-gray-500 max-w-md mx-auto">
+                Upload a document first, then ask questions. I'll find the relevant information and cite my sources.
+              </p>
+              <div className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-3 max-w-lg w-full mx-auto">
+                {[
+                  'What are the key findings?',
+                  'Summarize the main points',
+                  'What are the conclusions?',
+                  'Find specific details about...',
+                ].map((suggestion, i) => (
+                  <button
+                    key={i}
+                    onClick={() => setInput(suggestion)}
+                    className="px-4 py-3 text-sm text-left text-gray-700 bg-gray-50 hover:bg-gray-100 rounded-xl border border-gray-200 transition-all hover:border-primary-300 hover:shadow-sm"
+                  >
+                    {suggestion}
+                  </button>
+                ))}
+              </div>
             </div>
-            <h2 className="text-2xl font-bold text-gray-900 mb-2">
-              Ask anything about your documents
-            </h2>
-            <p className="text-gray-500 max-w-md">
-              Upload a document first, then ask questions. I'll find the relevant information and cite my sources.
-            </p>
-            <div className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-3 max-w-lg w-full">
-              {[
-                'What are the key findings?',
-                'Summarize the main points',
-                'What are the conclusions?',
-                'Find specific details about...',
-              ].map((suggestion, i) => (
-                <button
-                  key={i}
-                  onClick={() => setInput(suggestion)}
-                  className="px-4 py-3 text-sm text-left text-gray-700 bg-gray-50 hover:bg-gray-100 rounded-xl border border-gray-200 transition-all hover:border-primary-300 hover:shadow-sm"
-                >
-                  {suggestion}
-                </button>
-              ))}
-            </div>
-          </div>
-        ) : (
-          messages.map((message) => (
-            <ChatMessage key={message.id} message={message} />
-          ))
-        )}
+          ) : (
+            messages.map((message) => (
+              <ChatMessage
+                key={message.id}
+                message={message}
+                onSourceClick={onSourceClick}
+              />
+            ))
+          )}
 
-        {isLoading && (
-          <div className="flex gap-4">
-            <div className="flex-shrink-0 w-8 h-8 rounded-full bg-gradient-to-br from-primary-500 to-violet-600 flex items-center justify-center">
-              <Loader2 className="h-4 w-4 text-white animate-spin" />
-            </div>
-            <div className="flex-1">
-              <div className="bg-gray-100 rounded-lg px-4 py-3 max-w-[80%]">
-                <div className="flex items-center gap-2">
-                  <div className="flex space-x-1">
-                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+          {isLoading && (
+            <div className="flex gap-4">
+              <div className="flex-shrink-0 w-8 h-8 rounded-full bg-gradient-to-br from-primary-500 to-violet-600 flex items-center justify-center">
+                <Loader2 className="h-4 w-4 text-white animate-spin" />
+              </div>
+              <div className="flex-1">
+                <div className="bg-gray-100 rounded-lg px-4 py-3 max-w-[80%]">
+                  <div className="flex items-center gap-2">
+                    <div className="flex space-x-1">
+                      <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                      <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                      <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                    </div>
+                    <span className="text-sm text-gray-500">Searching documents...</span>
                   </div>
-                  <span className="text-sm text-gray-500">Searching documents...</span>
                 </div>
               </div>
             </div>
-          </div>
-        )}
+          )}
 
-        {error && (
-          <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-red-700">
-            {error}
-          </div>
-        )}
+          {error && (
+            <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-red-700">
+              {error}
+            </div>
+          )}
 
-        <div ref={messagesEndRef} />
+          <div ref={messagesEndRef} />
+        </div>
       </div>
 
       {/* Input Area */}
-      <div className="border-t border-gray-200 bg-white py-4">
-        <form onSubmit={handleSubmit} className="max-w-3xl mx-auto px-4">
+      <div className="border-t border-gray-200 bg-white pt-4 pb-6 px-4 lg:px-8">
+        <form onSubmit={handleSubmit} className="max-w-4xl mx-auto">
           <div className="relative flex items-center gap-2">
             <textarea
               ref={inputRef}

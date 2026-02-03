@@ -2,15 +2,16 @@
 
 import { useState } from 'react';
 import { User, Bot, ChevronDown, ChevronRight, Copy, Check } from 'lucide-react';
-import { type HistoryMessage } from '@/lib/api';
+import { type HistoryMessage, type Citation } from '@/lib/api';
 import CitationCard from './CitationCard';
 import { formatDate } from '@/lib/utils';
 
 interface ChatMessageProps {
   message: HistoryMessage;
+  onSourceClick?: (citation: Citation) => void;
 }
 
-export default function ChatMessage({ message }: ChatMessageProps) {
+export default function ChatMessage({ message, onSourceClick }: ChatMessageProps) {
   const isUser = message.role === 'user';
   const sources = message.metadata?.sources || [];
   const [isSourcesExpanded, setIsSourcesExpanded] = useState(false);
@@ -96,7 +97,12 @@ export default function ChatMessage({ message }: ChatMessageProps) {
         {!isUser && sources.length > 0 && isSourcesExpanded && (
           <div className="space-y-2 mt-2 w-full max-w-[80%]">
             {sources.map((citation, index) => (
-              <CitationCard key={index} citation={citation} index={index} />
+              <CitationCard
+                key={index}
+                citation={citation}
+                index={index}
+                onClick={onSourceClick}
+              />
             ))}
           </div>
         )}

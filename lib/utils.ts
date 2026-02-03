@@ -5,7 +5,11 @@ export function cn(...inputs: ClassValue[]) {
 }
 
 export function formatDate(dateString: string): string {
-  const date = new Date(dateString);
+  // Check if timezone info is already present (Z, +HH:MM, or -HH:MM at the end)
+  const hasTimezone = dateString.endsWith('Z') || /[+-]\d{2}:\d{2}$/.test(dateString);
+  // If no timezone, treat as UTC by appending Z
+  const dateStr = hasTimezone ? dateString : dateString + 'Z';
+  const date = new Date(dateStr);
   const now = new Date();
   const diffMs = now.getTime() - date.getTime();
   const diffMins = Math.floor(diffMs / 60000);
