@@ -4,11 +4,11 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Mail, Lock, User, Sparkles, ArrowRight, AlertCircle } from 'lucide-react';
-import { useAuth } from '@/components/AuthContext';
+import { register as apiRegister } from '@/lib/auth';
 
 export default function RegisterPage() {
   const router = useRouter();
-  const { register } = useAuth();
+  // const { register } = useAuth(); // Don't use context register as it auto-logins
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -28,7 +28,7 @@ export default function RegisterPage() {
     setLoading(true);
 
     try {
-      await register(email, password, name);
+      await apiRegister(email, password, name);
       setRegistrationSuccess(true);
     } catch (err: unknown) {
       const errorMessage = err instanceof Error ? err.message : 'Registration failed';
