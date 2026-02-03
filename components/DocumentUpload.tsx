@@ -205,19 +205,22 @@ export default function DocumentUpload({ onUploadComplete, onUploadStart }: Docu
   const pendingFiles = files.filter(f => f.status === 'pending');
   const hasProcessing = files.some(f => f.status === 'uploading' || f.status === 'processing');
 
+  const isLimitReached = uploadsRemaining !== null && uploadsRemaining <= 0;
+
   return (
     <div className="w-full space-y-4">
       {/* Upload Zone */}
       <div
-        onDrop={handleDrop}
-        onDragOver={handleDragOver}
-        onDragLeave={handleDragLeave}
+        onDrop={!isLimitReached ? handleDrop : undefined}
+        onDragOver={!isLimitReached ? handleDragOver : undefined}
+        onDragLeave={!isLimitReached ? handleDragLeave : undefined}
         className={cn(
           'relative border-2 border-dashed rounded-lg p-8 transition-colors',
           isDragging
             ? 'border-primary-500 bg-primary-50'
             : 'border-gray-300 hover:border-primary-400',
-          hasProcessing && 'pointer-events-none opacity-60'
+          (hasProcessing || isLimitReached) && 'pointer-events-none opacity-60',
+          isLimitReached && 'bg-gray-50 border-gray-200'
         )}
       >
         <input
@@ -226,27 +229,41 @@ export default function DocumentUpload({ onUploadComplete, onUploadStart }: Docu
           className="hidden"
           accept=".pdf,.docx,.txt"
           onChange={handleFileInput}
-          disabled={hasProcessing}
+          disabled={hasProcessing || isLimitReached}
           multiple
         />
 
         <div className="flex flex-col items-center justify-center space-y-4">
-          <div className="rounded-full bg-primary-100 p-4">
-            <Upload className="h-8 w-8 text-primary-600" />
+          <div className={cn(
+            "rounded-full p-4",
+            isLimitReached ? "bg-gray-100" : "bg-primary-100"
+          )}>
+            <Upload className={cn(
+              "h-8 w-8",
+              isLimitReached ? "text-gray-400" : "text-primary-600"
+            )} />
           </div>
           <div className="text-center">
             <label
               htmlFor="file-upload"
-              className="cursor-pointer text-lg font-medium text-gray-900 hover:text-primary-600"
+              className={cn(
+                "cursor-pointer text-lg font-medium",
+                isLimitReached ? "text-gray-500 cursor-not-allowed" : "text-gray-900 hover:text-primary-600"
+              )}
             >
-              Click to select files
+              {isLimitReached ? 'Daily upload limit reached' : 'Click to select files'}
             </label>
-            <p className="text-sm text-gray-500 mt-1">or drag and drop</p>
+            <p className="text-sm text-gray-500 mt-1">
+              {isLimitReached ? 'Please try again tomorrow' : 'or drag and drop'}
+            </p>
             <p className="text-xs text-gray-400 mt-2">
               PDF, DOCX, TXT up to 50MB each
             </p>
             {uploadsRemaining !== null && (
-              <p className="text-xs text-primary-600 mt-2">
+              <p className={cn(
+                "text-xs mt-2 font-medium",
+                isLimitReached ? "text-red-500" : "text-primary-600"
+              )}>
                 {uploadsRemaining} of {dailyLimit} uploads remaining today
               </p>
             )}
